@@ -1,51 +1,55 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from .forms import ContactForm
+from .forms import UserRegister
 # Create your views here.
+users = ["existing_user1", "existing_user2"]
+
+def handle_registration(form):
+    username = form.cleaned_data['username']
+    password = form.cleaned_data['password']
+    repeat_password = form.cleaned_data['repeat_password']
+    age = form.cleaned_data['age']
+
+    if password != repeat_password:
+        return {'error': "Пароли не совпадают", 'form': form}
+    elif age < 18:
+        return {'error': "Вы должны быть старше 18", 'form': form}
+    elif username in users:
+        return {'error': "Пользователь уже существует", 'form': form}
+    else:
+        users.append(username)
+        return {'message': f"Приветствуем, {username}!", 'form': UserRegister()}
 
 def sign_up_by_html(request):
-    users = []
-    info = {}
-    context = {
-        'users': users,
-        'info': info,
-}
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
         repeat_password = request.POST.get('repeat_password')
         age = request.POST.get('age')
-        subscribe = request.POST.get('subscribe') == 'on'
 
-        print(f"Username:{username}")
-        print(f"Password:{password}")
-        print(f"repeat_password:{repeat_password}")
-        print(f"age:{age}")
-        print(f"Subscribe:{subscribe}")
-
+        try:
+            age = int(age)
+        except ValueError:
+            age = None
 
         if password != repeat_password:
-            info['error'] = 'Пароли не совпадают'
-        elif int(age) < 18:
-            info['error'] = 'Вы должны быть старше 18'
+            info = {'error': 'Пароли не совпадают', 'form': UserRegister(request.POST)}
+        elif age is None or age < 18:
+            info = {'error': 'Вы должны быть старше 18', 'form': UserRegister(request.POST)}
         elif username in users:
-            info['error'] = 'Пользователь уже существует'
+            info = {'error': 'Пользователь уже существует', 'form': UserRegister(request.POST)}
         else:
             users.append(username)
-        return HttpResponse(f'Приветствуем, truelogin!')
-    return render(request, 'fifth_task/registration_page.html', context)
+            info = {'message': f"Приветствуем, {username}!", 'form': UserRegister()}
+        return render(request, 'fifth_task/registration_page.html', info)
+    return render(request, 'fifth_task/registration_page.html', {'form': UserRegister()})
 
 def sign_up_by_django(request):
     if request.method == 'POST':
-        form = ContactForm(request.POST)
+        form = UserRegister(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            repeat_password = form.cleaned_data['repeat_password']
-            age = form.cleaned_data['age']
-            subscribe = form.cleaned_data['subscribe']
-        return HttpResponse(f'Приветствуем, truelogin!')
-
+            result = handle_registration(form)
+            return render(request, 'fifth_task/registration_page.html', result)
     else:
-        form = ContactForm()
+        form = UserRegister()
     return render(request, 'fifth_task/registration_page.html', {'form': form})
