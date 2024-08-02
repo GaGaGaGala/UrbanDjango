@@ -5,5 +5,4 @@ urlpatterns = [
     path('games/', views.get_games, name='get_games'),
     path('platform/', views.get_cart, name='get_platform'),
     path('menu/', views.get_cart, name='get_menu'),
-
 ]
